@@ -200,6 +200,25 @@ func TestBufferLineLoadCell(t *testing.T) {
 	}
 }
 
+func TestBufferLineGetExtended(t *testing.T) {
+	t.Parallel()
+	bl := NewBufferLine(2, nil, false)
+
+	attrs := DefaultAttrData()
+	attrs.Extended = NewExtendedAttrs(0, 42)
+	attrs.UpdateExtended()
+	bl.SetCellFromCodepoint(0, 'A', 1, &attrs)
+
+	if got := bl.GetExtended(0); got != attrs.Extended {
+		t.Fatalf("GetExtended returned %p, want stored attributes %p", got, attrs.Extended)
+	}
+
+	got := bl.GetExtended(1)
+	if got == nil || !got.IsEmpty() {
+		t.Fatalf("GetExtended returned %#v for a cell without extended attributes, want empty attributes", got)
+	}
+}
+
 func TestBufferLineLoadCellClearsSparseFields(t *testing.T) {
 	t.Parallel()
 	bl := NewBufferLine(2, nil, false)

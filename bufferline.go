@@ -167,12 +167,16 @@ func (bl *BufferLine) LoadCell(index int, cell *CellData) *CellData {
 	} else {
 		cell.CombinedData = ""
 	}
-	if cell.Bg&BgFlagHasExtended != 0 {
-		cell.Extended = bl.extendedAttrs[index]
-	} else {
-		cell.Extended = &ExtendedAttrs{}
-	}
+	cell.Extended = bl.GetExtended(index)
 	return cell
+}
+
+// GetExtended returns the extended attributes of the cell at index.
+func (bl *BufferLine) GetExtended(index int) *ExtendedAttrs {
+	if bl.data[index*cellSize+cellBg]&BgFlagHasExtended != 0 {
+		return bl.extendedAttrs[index]
+	}
+	return &ExtendedAttrs{}
 }
 
 // SetCell sets the cell at index from a CellData.
