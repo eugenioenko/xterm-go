@@ -445,7 +445,7 @@ func (b *Buffer) reflowSmaller(newCols, newRows int) {
 		countInsertedSoFar := 0
 		for i := min(b.Lines.MaxLength()-1, originalLinesLength+countToInsert-1); i >= 0; i-- {
 			if nextToInsertIndex < len(toInsert) && nextToInsert.start > originalLineIndex+countInsertedSoFar {
-				for nextI := len(nextToInsert.newLines) - 1; nextI >= 0; nextI-- {
+				for nextI := len(nextToInsert.newLines) - 1; nextI >= 0 && i >= 0; nextI-- {
 					b.Lines.Set(i, nextToInsert.newLines[nextI])
 					i--
 				}

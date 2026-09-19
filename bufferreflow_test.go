@@ -285,3 +285,34 @@ func TestReflowIntegrationSmaller(t *testing.T) {
 		t.Errorf("(-want +got):\n%s", diff)
 	}
 }
+
+func TestReflowIntegrationSmallerMoreLinesThanCapacity(t *testing.T) {
+	t.Parallel()
+	b := NewBuffer(BufferOptions{
+		Cols:          20,
+		Rows:          2,
+		Scrollback:    2,
+		TabStopWidth:  8,
+		HasScrollback: true,
+	})
+	b.FillViewportRows(nil)
+	attrs := &AttributeData{Extended: &ExtendedAttrs{}}
+	for y := range b.Lines.Length() {
+		line := b.Lines.Get(y)
+		for i, ch := range []rune("ABCDEFGHIJKLMNOPQRST") {
+			line.SetCellFromCodepoint(i, uint32(ch), 1, attrs)
+		}
+	}
+
+	// Reflowing 20 columns into 2 needs far more lines than the list can hold.
+	b.Resize(2, 2)
+
+	if b.Lines.Length() > b.Lines.MaxLength() {
+		t.Errorf("Lines.Length() = %d, want at most MaxLength %d", b.Lines.Length(), b.Lines.MaxLength())
+	}
+	for i := range b.Lines.Length() {
+		if b.Lines.Get(i) == nil {
+			t.Errorf("Lines.Get(%d) = nil, want a line", i)
+		}
+	}
+}
