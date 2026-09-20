@@ -207,6 +207,21 @@ func (a *AttributeData) GetBgColor() int {
 
 // --- Extended attributes ---
 
+const underlineColorMask = AttrCMMask | AttrRGBMask
+
+// setExtendedBits replaces the masked bits of the extended attributes with a copy, and
+// keeps the shared pointer when they already hold value so a repeated SGR does not allocate.
+func (a *AttributeData) setExtendedBits(mask, value uint32) {
+	cur := a.extended()
+	ext := cur.ext&^mask | value&mask
+	if ext == cur.ext {
+		return
+	}
+	next := cur.Clone()
+	next.ext = ext
+	a.Extended = next
+}
+
 func (a *AttributeData) HasExtendedAttrs() uint32 { return a.Bg & BgFlagHasExtended }
 
 // UpdateExtended sets or clears the HAS_EXTENDED flag based on whether extended attrs are empty.

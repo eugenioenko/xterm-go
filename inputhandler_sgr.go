@@ -142,8 +142,7 @@ func (h *InputHandler) charAttributes(params *Params) bool {
 
 		case p == 59:
 			// default underline color — reset to CM_DEFAULT (0)
-			attr.Extended = attr.extended().Clone()
-			attr.Extended.SetUnderlineColor(0)
+			attr.setExtendedBits(underlineColorMask, 0)
 			attr.UpdateExtended()
 
 		case p == 221:
@@ -167,11 +166,7 @@ func (h *InputHandler) processSGR0(attr *AttributeData) {
 	def := DefaultAttrData()
 	attr.Fg = def.Fg
 	attr.Bg = def.Bg
-	attr.Extended = attr.extended().Clone()
-	attr.Extended.SetUnderlineStyle(UnderlineStyleNone)
-	uc := attr.Extended.UnderlineColor()
-	uc &= ^(AttrCMMask | AttrRGBMask)
-	attr.Extended.SetUnderlineColor(uc)
+	attr.setExtendedBits(ExtFlagUnderlineStyle|underlineColorMask, 0)
 	attr.UpdateExtended()
 }
 
@@ -257,9 +252,8 @@ func (h *InputHandler) extractColor(params *Params, pos int, attr *AttributeData
 	case 48:
 		attr.Bg = h.updateAttrColor(attr.Bg, accu[1], accu[3], accu[4], accu[5])
 	case 58:
-		attr.Extended = attr.extended().Clone()
-		uc := attr.Extended.UnderlineColor()
-		attr.Extended.SetUnderlineColor(h.updateAttrColor(uc, accu[1], accu[3], accu[4], accu[5]))
+		uc := attr.extended().UnderlineColor()
+		attr.setExtendedBits(underlineColorMask, h.updateAttrColor(uc, accu[1], accu[3], accu[4], accu[5]))
 		attr.UpdateExtended()
 	}
 
@@ -268,14 +262,12 @@ func (h *InputHandler) extractColor(params *Params, pos int, attr *AttributeData
 
 // processUnderline sets the underline style on extended attrs.
 func (h *InputHandler) processUnderline(style int32, attr *AttributeData) {
-	attr.Extended = attr.extended().Clone()
-
 	// default to single underline for out-of-range or -1
 	if style < 0 || style > 5 {
 		style = 1
 	}
 
-	attr.Extended.SetUnderlineStyle(UnderlineStyle(style))
+	attr.setExtendedBits(ExtFlagUnderlineStyle, uint32(style)<<26)
 	attr.Fg |= FgFlagUnderline
 
 	// 0 deactivates underline
