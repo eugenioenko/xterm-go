@@ -183,8 +183,16 @@ func (cl *CircularList[T]) ShiftElements(start, count, offset int) {
 			}
 		}
 	} else {
-		for i := range count {
-			cl.Set(start+i+offset, cl.Get(start+i))
+		src := cl.getCyclicIndex(start)
+		dst := cl.getCyclicIndex(start + offset)
+		for range count {
+			cl.array[dst] = cl.array[src]
+			if src++; src == cl.maxLen {
+				src = 0
+			}
+			if dst++; dst == cl.maxLen {
+				dst = 0
+			}
 		}
 	}
 }
