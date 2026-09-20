@@ -167,7 +167,11 @@ func (bl *BufferLine) LoadCell(index int, cell *CellData) *CellData {
 	} else {
 		cell.CombinedData = ""
 	}
-	cell.Extended = bl.GetExtended(index)
+	if cell.Bg&BgFlagHasExtended != 0 {
+		cell.Extended = bl.extendedAttrs[index]
+	} else if cell.Extended == nil || !cell.Extended.IsEmpty() {
+		cell.Extended = &ExtendedAttrs{}
+	}
 	return cell
 }
 
