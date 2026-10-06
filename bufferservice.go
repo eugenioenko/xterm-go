@@ -113,6 +113,11 @@ func (bs *BufferService) Scroll(eraseAttr *AttributeData, isWrapped bool) {
 			} else {
 				buffer.Lines.Push(newLine.Clone())
 			}
+		} else if willBufferBeTrimmed {
+			// Splice drops line 0 to make room, so reuse it as the inserted line.
+			reused := buffer.Lines.Get(0)
+			reused.CopyFrom(newLine)
+			buffer.Lines.Splice(bottomRow+1, 0, reused)
 		} else {
 			buffer.Lines.Splice(bottomRow+1, 0, newLine.Clone())
 		}
@@ -128,8 +133,10 @@ func (bs *BufferService) Scroll(eraseAttr *AttributeData, isWrapped bool) {
 	} else {
 		// Non-zero scrollTop: shift lines in-place within the scroll region.
 		scrollRegionHeight := bottomRow - topRow + 1
+		reused := buffer.Lines.Get(topRow)
 		buffer.Lines.ShiftElements(topRow+1, scrollRegionHeight-1, -1)
-		buffer.Lines.Set(bottomRow, newLine.Clone())
+		reused.CopyFrom(newLine)
+		buffer.Lines.Set(bottomRow, reused)
 	}
 
 	if !bs.IsUserScrolling {

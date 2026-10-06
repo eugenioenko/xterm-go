@@ -398,11 +398,9 @@ func (bl *BufferLine) CopyFrom(line *BufferLine) {
 // Clone returns a deep copy of the BufferLine.
 func (bl *BufferLine) Clone() *BufferLine {
 	newLine := &BufferLine{
-		data:          make([]uint32, len(bl.data)),
-		combined:      make(map[int]string, len(bl.combined)),
-		extendedAttrs: make(map[int]*ExtendedAttrs, len(bl.extendedAttrs)),
-		Len:           bl.Len,
-		IsWrapped:     bl.IsWrapped,
+		data:      make([]uint32, len(bl.data)),
+		Len:       bl.Len,
+		IsWrapped: bl.IsWrapped,
 	}
 	copy(newLine.data, bl.data)
 	newLine.copySparseMapsFrom(bl)
@@ -469,8 +467,19 @@ func (bl *BufferLine) copyCellMapsFrom(src *BufferLine, srcCol, destCol int) {
 }
 
 func (bl *BufferLine) copySparseMapsFrom(src *BufferLine) {
-	bl.combined = make(map[int]string, len(src.combined))
-	bl.extendedAttrs = make(map[int]*ExtendedAttrs, len(src.extendedAttrs))
+	if bl.combined == nil {
+		bl.combined = make(map[int]string, len(src.combined))
+	} else {
+		clear(bl.combined)
+	}
+	if bl.extendedAttrs == nil {
+		bl.extendedAttrs = make(map[int]*ExtendedAttrs, len(src.extendedAttrs))
+	} else {
+		clear(bl.extendedAttrs)
+	}
+	if len(src.combined) == 0 && len(src.extendedAttrs) == 0 {
+		return
+	}
 	for i := range src.Len {
 		si := i * cellSize
 		if src.data[si+cellContent]&ContentIsCombinedMask != 0 {
