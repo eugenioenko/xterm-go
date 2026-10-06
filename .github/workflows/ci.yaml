@@ -32,6 +32,11 @@ jobs:
       - name: Build
         run: go build ./...
 
+      - name: Build and test 32-bit
+        run: |
+          GOARCH=arm GOARM=7 go build ./...
+          GOARCH=386 go test -count=1 ./...
+
   benchstat:
     name: Base vs PR benchstat
     if: github.event_name == 'pull_request'

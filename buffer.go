@@ -2,8 +2,11 @@ package xterm
 
 // Ported from xterm.js src/common/buffer/Buffer.ts.
 
-// MaxBufferSize is the maximum number of lines a buffer can hold (2^32 - 1).
-const MaxBufferSize = 4294967295
+import "math"
+
+// MaxBufferSize is the maximum number of lines a buffer can hold: 2^32 - 1,
+// capped at math.MaxInt so the package builds on 32-bit platforms.
+const MaxBufferSize = min(4294967295, math.MaxInt)
 
 // BufferOptions configures a Buffer. In xterm.js these come from OptionsService/BufferService;
 // here they are passed directly to avoid DI.
