@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
-	"github.com/gitpod-io/xterm-go"
+	"github.com/eugenioenko/xterm-go"
 )
 
 //go:embed index.html

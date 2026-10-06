@@ -3,7 +3,7 @@
 This document is the reference for porting the headless xterm.js terminal emulator to Go.
 
 **Source:** https://github.com/xtermjs/xterm.js (MIT license)
-**Target:** This repository (`github.com/gitpod-io/xterm-go`)
+**Target:** This repository (`github.com/eugenioenko/xterm-go`)
 
 
 ## Goal

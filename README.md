@@ -6,10 +6,12 @@ It processes VT/ANSI escape sequences and maintains terminal buffer state withou
 
 The implementation follows the VT500 specification and is a direct port of the headless subset of xterm.js (MIT license).
 
+This is a maintained fork of [gitpod-io/xterm-go](https://github.com/gitpod-io/xterm-go) used by [ttt](https://github.com/eugenioenko/ttt). It adds a fix for a reflow panic when narrowing a full buffer and removes allocations from scrolling, cell loading, and SGR handling. Fixes are reported upstream as well.
+
 ## Install
 
 ```
-go get github.com/gitpod-io/xterm-go
+go get github.com/eugenioenko/xterm-go
 ```
 
 ## Usage
@@ -20,7 +22,7 @@ package main
 import (
 	"fmt"
 
-	xterm "github.com/gitpod-io/xterm-go"
+	xterm "github.com/eugenioenko/xterm-go"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module github.com/gitpod-io/xterm-go
+module github.com/eugenioenko/xterm-go
 
 go 1.25
 
