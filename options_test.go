@@ -1,6 +1,7 @@
 package xterm
 
 import (
+	"math"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -268,7 +269,7 @@ func TestOptionsServiceSetOptionScrollback(t *testing.T) {
 	tests := []TestCase{
 		{"normal value", 500, 500},
 		{"negative clamped to 0", -1, 0},
-		{"max clamped", MaxBufferSize + 1, MaxBufferSize},
+		{"max clamped", math.MaxInt, MaxBufferSize},
 	}
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
