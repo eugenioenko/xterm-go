@@ -105,6 +105,16 @@ Cross-implementation tests verify the Go port produces identical behavior to xte
 go test -run TestConformance -v
 ```
 
+## Benchmarks
+
+Pull requests get a benchstat comparison against the base commit, posted as a PR comment. To run the same comparison locally against another checkout (requires `golang.org/x/perf/cmd/benchstat`):
+
+```
+BASE_DIR=../xterm-go-base HEAD_DIR=. REPORT_FILE=benchstat.md scripts/bench-compare.sh
+```
+
+`COUNT` (default 6) and `BENCH_TIME` (default 500ms) control the runs.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
