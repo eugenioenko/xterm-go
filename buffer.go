@@ -324,6 +324,8 @@ func (b *Buffer) reflowSmaller(newCols, newRows int) {
 
 	toInsert := []reflowInsert{}
 	countToInsert := 0
+	savedY := b.SavedState.Y
+	savedShift := 0
 
 	for y := b.Lines.Length() - 1; y >= 0; y-- {
 		nextLine := b.Lines.Get(y)
@@ -427,7 +429,9 @@ func (b *Buffer) reflowSmaller(newCols, newRows int) {
 				}
 			}
 		}
-		b.SavedState.Y = min(b.SavedState.Y+linesToAdd, b.YBase+newRows-1)
+		if y+len(wrappedLines)-linesToAdd <= savedY {
+			savedShift += linesToAdd
+		}
 	}
 
 	// Rearrange lines
@@ -479,6 +483,9 @@ func (b *Buffer) reflowSmaller(newCols, newRows int) {
 		if amountToTrim > 0 {
 			b.Lines.OnTrimEmitter.Fire(amountToTrim)
 		}
+		// Unlike xterm.js, which shifts the saved row by every reflowed group,
+		// only lines inserted above it move it, and trimmed lines move it back.
+		b.SavedState.Y = min(max(savedY+savedShift-amountToTrim, 0), b.Lines.Length()-1)
 	}
 }
 
