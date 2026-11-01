@@ -198,7 +198,7 @@ func (cl *CircularList[T]) Dispose() {
 
 func (cl *CircularList[T]) advanceStart(n int) {
 	cl.startIdx += n
-	if cl.startIdx >= cl.maxLen {
+	if cl.startIdx >= cl.maxLen && cl.maxLen > 0 {
 		cl.startIdx %= cl.maxLen
 	}
 }

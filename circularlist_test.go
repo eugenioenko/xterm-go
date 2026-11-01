@@ -569,3 +569,13 @@ func TestCircularListMatchesSliceModelAcrossWraps(t *testing.T) {
 		}
 	}
 }
+
+func TestCircularListTrimStartOnZeroCapacity(t *testing.T) {
+	cl := NewCircularList[int](0)
+	fired := -1
+	cl.OnTrimEmitter.Event(func(n int) { fired = n })
+	cl.TrimStart(1)
+	if fired != 0 || cl.Length() != 0 {
+		t.Fatalf("trim fired %d, length %d; want 0, 0", fired, cl.Length())
+	}
+}
