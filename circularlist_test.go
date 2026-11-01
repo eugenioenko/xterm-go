@@ -524,3 +524,48 @@ func TestCircularListShiftForwardWithTrim(t *testing.T) {
 		t.Errorf("(-want +got):\n%s", diff)
 	}
 }
+
+func TestCircularListMatchesSliceModelAcrossWraps(t *testing.T) {
+	const maxLen = 7
+	cl := NewCircularList[int](maxLen)
+	var model []int
+	trim := func() {
+		if len(model) > maxLen {
+			model = model[len(model)-maxLen:]
+		}
+	}
+	next := 0
+	for step := range 500 {
+		next++
+		switch step % 5 {
+		case 0, 1:
+			cl.Push(next)
+			model = append(model, next)
+			trim()
+		case 2:
+			if len(model) > 1 && len(model) < maxLen {
+				at := step % len(model)
+				cl.Splice(at, 1, next, next+1000)
+				model = append(model[:at], append([]int{next, next + 1000}, model[at+1:]...)...)
+			}
+		case 3:
+			if len(model) > 2 && step%3 == 0 {
+				cl.TrimStart(1)
+				model = model[1:]
+			}
+		case 4:
+			if len(model) > 2 {
+				cl.ShiftElements(1, len(model)-1, 1)
+				model = append([]int{model[0], model[1]}, model[1:]...)
+				trim()
+			}
+		}
+		got := make([]int, cl.Length())
+		for i := range got {
+			got[i] = cl.Get(i)
+		}
+		if diff := cmp.Diff(model, got); diff != "" {
+			t.Fatalf("step %d: mismatch (-want +got):\n%s", step, diff)
+		}
+	}
+}

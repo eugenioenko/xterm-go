@@ -139,7 +139,7 @@ func (cl *CircularList[T]) Splice(start, deleteCount int, items ...T) {
 	// Adjust length, trimming if over capacity
 	if cl.length+len(items) > cl.maxLen {
 		countToTrim := (cl.length + len(items)) - cl.maxLen
-		cl.startIdx += countToTrim
+		cl.advanceStart(countToTrim)
 		cl.length = cl.maxLen
 		cl.OnTrimEmitter.Fire(countToTrim)
 	} else {
@@ -152,7 +152,7 @@ func (cl *CircularList[T]) TrimStart(count int) {
 	if count > cl.length {
 		count = cl.length
 	}
-	cl.startIdx += count
+	cl.advanceStart(count)
 	cl.length -= count
 	cl.OnTrimEmitter.Fire(count)
 }
@@ -178,7 +178,7 @@ func (cl *CircularList[T]) ShiftElements(start, count, offset int) {
 			cl.length += expandBy
 			for cl.length > cl.maxLen {
 				cl.length--
-				cl.startIdx++
+				cl.advanceStart(1)
 				cl.OnTrimEmitter.Fire(1)
 			}
 		}
@@ -196,6 +196,21 @@ func (cl *CircularList[T]) Dispose() {
 	cl.OnTrimEmitter.Dispose()
 }
 
+func (cl *CircularList[T]) advanceStart(n int) {
+	cl.startIdx += n
+	if cl.startIdx >= cl.maxLen {
+		cl.startIdx %= cl.maxLen
+	}
+}
+
+// getCyclicIndex relies on startIdx always being kept in [0, maxLen).
 func (cl *CircularList[T]) getCyclicIndex(index int) int {
-	return (cl.startIdx + index) % cl.maxLen
+	i := cl.startIdx + index
+	if i >= cl.maxLen {
+		i -= cl.maxLen
+	}
+	if i >= cl.maxLen {
+		i %= cl.maxLen
+	}
+	return i
 }
