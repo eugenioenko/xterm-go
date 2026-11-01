@@ -362,6 +362,38 @@ func TestBufferLineFill(t *testing.T) {
 	}
 }
 
+func TestBufferLineFillResetsSparseEntries(t *testing.T) {
+	t.Parallel()
+	bl := NewBufferLine(4, nil, false)
+	bl.Set(0, NewCharData(0, "e\u0301", 1, 0x0301))
+	ext := DefaultAttrData()
+	ext.Extended = NewExtendedAttrs(0, 7)
+	ext.UpdateExtended()
+	bl.SetCellFromCodepoint(1, 'B', 1, &ext)
+
+	bl.Fill(charCell('X', 1), false)
+	if len(bl.combined) != 0 || len(bl.extendedAttrs) != 0 {
+		t.Fatalf("plain fill left sparse entries: combined=%v extended=%v", bl.combined, bl.extendedAttrs)
+	}
+	if got := bl.TranslateToString(false, 0, -1); got != "XXXX" {
+		t.Fatalf("plain fill = %q, want XXXX", got)
+	}
+
+	extFill := NewCellData()
+	extFill.Content = 'Y' | 1<<ContentWidthShift
+	extFill.Bg = ext.Bg
+	extFill.Extended = ext.Extended
+	bl.Fill(extFill, false)
+	for i := range bl.Len {
+		if e := bl.GetExtended(i); e.URLID() != 7 {
+			t.Fatalf("cell %d extended urlID = %d, want 7", i, e.URLID())
+		}
+	}
+	if got := bl.TranslateToString(false, 0, -1); got != "YYYY" {
+		t.Fatalf("extended fill = %q, want YYYY", got)
+	}
+}
+
 func TestBufferLineCopyFrom(t *testing.T) {
 	t.Parallel()
 	type Expectation struct {
@@ -635,5 +667,26 @@ func TestBufferLineWideCharTrimmedLength(t *testing.T) {
 	expected := Expectation{TrimmedLen: 2}
 	if diff := cmp.Diff(expected, got); diff != "" {
 		t.Errorf("(-want +got):\n%s", diff)
+	}
+}
+
+func TestBufferLineReplaceCellsEmptyAndPartialRanges(t *testing.T) {
+	t.Parallel()
+	bl := NewBufferLine(6, nil, false)
+	for i, ch := range "abcdef" {
+		bl.SetCellFromCodepoint(i, uint32(ch), 1, &AttributeData{Extended: &ExtendedAttrs{}})
+	}
+	bl.ReplaceCells(4, 2, charCell('Z', 1), false)
+	if got := bl.TranslateToString(false, 0, -1); got != "abcdef" {
+		t.Fatalf("reversed range changed the line to %q", got)
+	}
+	bl.ReplaceCells(4, 4, charCell('Z', 1), false)
+	if got := bl.TranslateToString(false, 0, -1); got != "abcdef" {
+		t.Fatalf("empty range changed the line to %q", got)
+	}
+	bl.ReplaceCells(1, 3, charCell('X', 1), false)
+	bl.ReplaceCells(5, 99, charCell('Y', 1), false)
+	if got := bl.TranslateToString(false, 0, -1); got != "aXXdeY" {
+		t.Fatalf("got %q, want aXXdeY", got)
 	}
 }
