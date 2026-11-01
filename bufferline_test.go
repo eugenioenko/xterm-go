@@ -669,3 +669,17 @@ func TestBufferLineWideCharTrimmedLength(t *testing.T) {
 		t.Errorf("(-want +got):\n%s", diff)
 	}
 }
+
+func TestBufferLineReplaceCellsEmptyAndPartialRanges(t *testing.T) {
+	t.Parallel()
+	bl := NewBufferLine(6, nil, false)
+	for i, ch := range "abcdef" {
+		bl.SetCellFromCodepoint(i, uint32(ch), 1, &AttributeData{Extended: &ExtendedAttrs{}})
+	}
+	bl.ReplaceCells(4, 2, charCell('X', 1), false)
+	bl.ReplaceCells(1, 3, charCell('X', 1), false)
+	bl.ReplaceCells(5, 99, charCell('Y', 1), false)
+	if got := bl.TranslateToString(false, 0, -1); got != "aXXdeY" {
+		t.Fatalf("got %q, want aXXdeY", got)
+	}
+}

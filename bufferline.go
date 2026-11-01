@@ -315,10 +315,7 @@ func (bl *BufferLine) ReplaceCells(start, end int, fillCell *CellData, respectPr
 	if end < bl.Len && bl.GetWidth(end-1) == 2 {
 		bl.SetCellFromCodepoint(end, 0, 1, &fillCell.AttributeData)
 	}
-	for start < end && start < bl.Len {
-		bl.SetCell(start, fillCell)
-		start++
-	}
+	bl.fillRange(start, min(end, bl.Len), fillCell)
 }
 
 // Resize resizes the line to cols cells, filling new cells with fillCell.
@@ -385,14 +382,22 @@ func (bl *BufferLine) Fill(fillCell *CellData, respectProtect bool) {
 	if len(bl.extendedAttrs) > 0 {
 		clear(bl.extendedAttrs)
 	}
-	if fillCell.Content&ContentIsCombinedMask != 0 || fillCell.Bg&BgFlagHasExtended != 0 {
-		for i := range bl.Len {
+	bl.fillRange(0, bl.Len, fillCell)
+}
+
+func (bl *BufferLine) fillRange(start, end int, fillCell *CellData) {
+	if start >= end {
+		return
+	}
+	if fillCell.Content&ContentIsCombinedMask != 0 || fillCell.Bg&BgFlagHasExtended != 0 ||
+		len(bl.combined) > 0 || len(bl.extendedAttrs) > 0 {
+		for i := start; i < end; i++ {
 			bl.SetCell(i, fillCell)
 		}
 		return
 	}
 	content, fg, bg := fillCell.Content, fillCell.Fg, fillCell.Bg
-	data := bl.data[:bl.Len*cellSize]
+	data := bl.data[start*cellSize : end*cellSize]
 	for i := 0; i+cellSize <= len(data); i += cellSize {
 		data[i+cellContent] = content
 		data[i+cellFg] = fg
