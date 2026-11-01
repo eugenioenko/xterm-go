@@ -15,7 +15,9 @@ const (
 
 // BufferLine stores a single terminal line as a flat []uint32 with 3 values per cell.
 type BufferLine struct {
-	data          []uint32
+	data []uint32
+	// combined is nil until the first entry is stored; write it only
+	// through setCombined.
 	combined      map[int]string
 	extendedAttrs map[int]*ExtendedAttrs
 	Len           int
@@ -27,7 +29,6 @@ type BufferLine struct {
 func NewBufferLine(cols int, fillCell *CellData, isWrapped bool) *BufferLine {
 	bl := &BufferLine{
 		data:          make([]uint32, cols*cellSize),
-		combined:      make(map[int]string),
 		extendedAttrs: make(map[int]*ExtendedAttrs),
 		Len:           cols,
 		IsWrapped:     isWrapped,
@@ -143,7 +144,7 @@ func (bl *BufferLine) Set(index int, value CharData) {
 	width := CharDataWidth(value)
 	runes := []rune(ch)
 	if len(runes) > 1 {
-		bl.combined[index] = ch
+		bl.setCombined(index, ch)
 		bl.data[index*cellSize+cellContent] = ContentIsCombinedMask | (uint32(width) << ContentWidthShift)
 	} else if len(runes) == 1 {
 		delete(bl.combined, index)
@@ -186,7 +187,7 @@ func (bl *BufferLine) GetExtended(index int) *ExtendedAttrs {
 // SetCell sets the cell at index from a CellData.
 func (bl *BufferLine) SetCell(index int, cell *CellData) {
 	if cell.Content&ContentIsCombinedMask != 0 {
-		bl.combined[index] = cell.CombinedData
+		bl.setCombined(index, cell.CombinedData)
 	} else if len(bl.combined) > 0 {
 		delete(bl.combined, index)
 	}
@@ -221,11 +222,11 @@ func (bl *BufferLine) SetCellFromCodepoint(index int, codePoint uint32, width in
 func (bl *BufferLine) AddCodepointToCell(index int, codePoint uint32, width int) {
 	content := bl.data[index*cellSize+cellContent]
 	if content&ContentIsCombinedMask != 0 {
-		bl.combined[index] += string(rune(codePoint))
+		bl.setCombined(index, bl.combined[index]+string(rune(codePoint)))
 	} else {
 		cp := content & ContentCodepointMask
 		if cp != 0 {
-			bl.combined[index] = string(rune(cp)) + string(rune(codePoint))
+			bl.setCombined(index, string(rune(cp))+string(rune(codePoint)))
 			content &= ^ContentCodepointMask
 			content |= ContentIsCombinedMask
 		} else {
@@ -383,7 +384,7 @@ func (bl *BufferLine) Fill(fillCell *CellData, respectProtect bool) {
 		}
 		return
 	}
-	bl.combined = make(map[int]string)
+	bl.combined = nil
 	bl.extendedAttrs = make(map[int]*ExtendedAttrs)
 	for i := range bl.Len {
 		bl.SetCell(i, fillCell)
@@ -461,7 +462,7 @@ func (bl *BufferLine) CopyCellsFrom(src *BufferLine, srcCol, destCol, length int
 // decide whether a sparse entry exists, so only the requested cells are touched.
 func (bl *BufferLine) copyCellMapsFrom(src *BufferLine, srcCol, destCol int) {
 	if srcData := src.data; srcData[srcCol*cellSize+cellContent]&ContentIsCombinedMask != 0 {
-		bl.combined[destCol] = src.combined[srcCol]
+		bl.setCombined(destCol, src.combined[srcCol])
 	} else if len(bl.combined) > 0 {
 		delete(bl.combined, destCol)
 	}
@@ -472,10 +473,15 @@ func (bl *BufferLine) copyCellMapsFrom(src *BufferLine, srcCol, destCol int) {
 	}
 }
 
-func (bl *BufferLine) copySparseMapsFrom(src *BufferLine) {
+func (bl *BufferLine) setCombined(index int, s string) {
 	if bl.combined == nil {
-		bl.combined = make(map[int]string, len(src.combined))
-	} else if len(bl.combined) > 0 {
+		bl.combined = make(map[int]string)
+	}
+	bl.combined[index] = s
+}
+
+func (bl *BufferLine) copySparseMapsFrom(src *BufferLine) {
+	if len(bl.combined) > 0 {
 		clear(bl.combined)
 	}
 	if bl.extendedAttrs == nil {
@@ -489,7 +495,7 @@ func (bl *BufferLine) copySparseMapsFrom(src *BufferLine) {
 	for i := range src.Len {
 		si := i * cellSize
 		if src.data[si+cellContent]&ContentIsCombinedMask != 0 {
-			bl.combined[i] = src.combined[i]
+			bl.setCombined(i, src.combined[i])
 		}
 		if src.data[si+cellBg]&BgFlagHasExtended != 0 {
 			bl.extendedAttrs[i] = src.extendedAttrs[i]
