@@ -1,6 +1,8 @@
 package xterm
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -154,5 +156,55 @@ func TestEventEmitterDoubleDispose(t *testing.T) {
 	expected := Expectation{CallCount: 0}
 	if diff := cmp.Diff(expected, got); diff != "" {
 		t.Errorf("(-want +got):\n%s", diff)
+	}
+}
+
+func TestEventEmitterUnsubscribeOtherDuringFire(t *testing.T) {
+	var e EventEmitter[int]
+	var calls []string
+	var second Disposable
+	e.Event(func(int) {
+		calls = append(calls, "a")
+		second.Dispose()
+		e.Event(func(int) { calls = append(calls, "late") })
+	})
+	second = e.Event(func(int) { calls = append(calls, "b") })
+	e.Event(func(int) { calls = append(calls, "c") })
+
+	e.Fire(1)
+	if got := strings.Join(calls, ","); got != "a,c" {
+		t.Fatalf("first fire calls = %q, want a,c", got)
+	}
+	calls = nil
+	e.Fire(2)
+	if got := strings.Join(calls, ","); got != "a,c,late" {
+		t.Fatalf("second fire calls = %q, want a,c,late", got)
+	}
+}
+
+func TestEventEmitterFireDoesNotAllocate(t *testing.T) {
+	var e EventEmitter[int]
+	sum := 0
+	for range 3 {
+		e.Event(func(v int) { sum += v })
+	}
+	if allocs := testing.AllocsPerRun(100, func() { e.Fire(1) }); allocs != 0 {
+		t.Fatalf("Fire allocated %v times with 3 listeners, want 0", allocs)
+	}
+}
+
+func BenchmarkEventEmitterFire(b *testing.B) {
+	for _, n := range []int{0, 1, 2, 4, 8} {
+		b.Run(fmt.Sprintf("listeners=%d", n), func(b *testing.B) {
+			var e EventEmitter[int]
+			sum := 0
+			for range n {
+				e.Event(func(v int) { sum += v })
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				e.Fire(1)
+			}
+		})
 	}
 }

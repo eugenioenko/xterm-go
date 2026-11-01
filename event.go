@@ -3,6 +3,8 @@ package xterm
 // Ported from xterm.js src/common/Event.ts.
 // Synchronous, callback-based event system. No channels.
 
+import "slices"
+
 // EventEmitter is a synchronous event emitter.
 // Listeners are called in registration order when Fire is called.
 type EventEmitter[T any] struct {
@@ -21,22 +23,18 @@ func (e *EventEmitter[T]) Fire(value T) {
 	if e.disposed {
 		return
 	}
-	n := len(e.listeners)
-	switch n {
-	case 0:
-		return
-	case 1:
-		if !e.listeners[0].removed {
-			e.listeners[0].fn(value)
+	// Unsubscribe never mutates the slice in place, so ranging over it is a
+	// stable snapshot even if listeners change during iteration.
+	ls := e.listeners
+	if len(ls) == 1 {
+		if !ls[0].removed {
+			ls[0].fn(value)
 		}
-	default:
-		// Snapshot to allow modifications during iteration.
-		snapshot := make([]*eventEntry[T], n)
-		copy(snapshot, e.listeners)
-		for _, entry := range snapshot {
-			if !entry.removed {
-				entry.fn(value)
-			}
+		return
+	}
+	for _, entry := range ls {
+		if !entry.removed {
+			entry.fn(value)
 		}
 	}
 }
@@ -52,7 +50,7 @@ func (e *EventEmitter[T]) Event(listener func(T)) Disposable {
 		entry.removed = true
 		for i, l := range e.listeners {
 			if l == entry {
-				e.listeners = append(e.listeners[:i], e.listeners[i+1:]...)
+				e.listeners = slices.Delete(slices.Clone(e.listeners), i, i+1)
 				break
 			}
 		}
