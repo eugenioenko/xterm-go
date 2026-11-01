@@ -71,8 +71,9 @@ func (h *InputHandler) ReverseIndex() bool {
 	h.restrictCursor()
 	if buf.Y == buf.ScrollTop {
 		scrollRegionHeight := buf.ScrollBottom - buf.ScrollTop
+		line := buf.Lines.Get(buf.YBase + buf.ScrollBottom)
 		buf.Lines.ShiftElements(buf.YBase+buf.Y, scrollRegionHeight, 1)
-		buf.Lines.Set(buf.YBase+buf.Y, buf.GetBlankLine(h.eraseAttrData(), false))
+		buf.Lines.Set(buf.YBase+buf.Y, h.bufferService.recycleBlankLine(line, h.eraseAttrData()))
 		h.dirtyRowTracker.MarkRangeDirty(buf.ScrollTop, buf.ScrollBottom)
 	} else {
 		buf.Y--

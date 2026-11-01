@@ -297,8 +297,9 @@ func (h *InputHandler) insertLines(params *Params) bool {
 	scrollBottomRowsOffset := h.bufferService.Rows - 1 - buf.ScrollBottom
 	scrollBottomAbsolute := h.bufferService.Rows - 1 + buf.YBase - scrollBottomRowsOffset + 1
 	for range n {
+		line := buf.Lines.Get(scrollBottomAbsolute - 1)
 		buf.Lines.Splice(scrollBottomAbsolute-1, 1)
-		buf.Lines.Splice(row, 0, buf.GetBlankLine(h.eraseAttrData(), false))
+		buf.Lines.Splice(row, 0, h.bufferService.recycleBlankLine(line, h.eraseAttrData()))
 	}
 	h.dirtyRowTracker.MarkRangeDirty(buf.Y, buf.ScrollBottom)
 	buf.X = 0
@@ -316,8 +317,9 @@ func (h *InputHandler) deleteLines(params *Params) bool {
 	j := h.bufferService.Rows - 1 - buf.ScrollBottom
 	j = h.bufferService.Rows - 1 + buf.YBase - j
 	for range n {
+		line := buf.Lines.Get(row)
 		buf.Lines.Splice(row, 1)
-		buf.Lines.Splice(j, 0, buf.GetBlankLine(h.eraseAttrData(), false))
+		buf.Lines.Splice(j, 0, h.bufferService.recycleBlankLine(line, h.eraseAttrData()))
 	}
 	h.dirtyRowTracker.MarkRangeDirty(buf.Y, buf.ScrollBottom)
 	buf.X = 0
@@ -330,8 +332,9 @@ func (h *InputHandler) scrollUp(params *Params) bool {
 	buf := h.activeBuffer()
 	n := max(int(params.Params[0]), 1)
 	for range n {
+		line := buf.Lines.Get(buf.YBase + buf.ScrollTop)
 		buf.Lines.Splice(buf.YBase+buf.ScrollTop, 1)
-		buf.Lines.Splice(buf.YBase+buf.ScrollBottom, 0, buf.GetBlankLine(h.eraseAttrData(), false))
+		buf.Lines.Splice(buf.YBase+buf.ScrollBottom, 0, h.bufferService.recycleBlankLine(line, h.eraseAttrData()))
 	}
 	h.dirtyRowTracker.MarkRangeDirty(buf.ScrollTop, buf.ScrollBottom)
 	return true
@@ -340,10 +343,11 @@ func (h *InputHandler) scrollUp(params *Params) bool {
 func (h *InputHandler) scrollDown(params *Params) bool {
 	buf := h.activeBuffer()
 	n := max(int(params.Params[0]), 1)
+	defAttr := DefaultAttrData()
 	for range n {
+		line := buf.Lines.Get(buf.YBase + buf.ScrollBottom)
 		buf.Lines.Splice(buf.YBase+buf.ScrollBottom, 1)
-		defAttr := DefaultAttrData()
-		buf.Lines.Splice(buf.YBase+buf.ScrollTop, 0, buf.GetBlankLine(&defAttr, false))
+		buf.Lines.Splice(buf.YBase+buf.ScrollTop, 0, h.bufferService.recycleBlankLine(line, &defAttr))
 	}
 	h.dirtyRowTracker.MarkRangeDirty(buf.ScrollTop, buf.ScrollBottom)
 	return true
