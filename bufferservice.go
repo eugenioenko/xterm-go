@@ -92,14 +92,7 @@ func (bs *BufferService) Reset() {
 // of the scroll region.
 func (bs *BufferService) Scroll(eraseAttr *AttributeData, isWrapped bool) {
 	buffer := bs.Buffer()
-
-	// Reuse cached blank line if attributes match
-	newLine := bs.cachedBlankLine
-	if newLine == nil || newLine.Len != bs.Cols || newLine.GetFg(0) != eraseAttr.Fg || newLine.GetBg(0) != eraseAttr.Bg {
-		newLine = buffer.GetBlankLine(eraseAttr, isWrapped)
-		bs.cachedBlankLine = newLine
-	}
-	newLine.IsWrapped = isWrapped
+	newLine := bs.blankLineTemplate(eraseAttr, isWrapped)
 
 	topRow := buffer.YBase + buffer.ScrollTop
 	bottomRow := buffer.YBase + buffer.ScrollBottom
@@ -144,6 +137,28 @@ func (bs *BufferService) Scroll(eraseAttr *AttributeData, isWrapped bool) {
 	}
 
 	bs.OnScrollEmitter.Fire(buffer.YDisp)
+}
+
+// blankLineTemplate returns a cached blank line for eraseAttr. Callers must
+// copy from it and never insert it into a buffer.
+func (bs *BufferService) blankLineTemplate(eraseAttr *AttributeData, isWrapped bool) *BufferLine {
+	newLine := bs.cachedBlankLine
+	if newLine == nil || newLine.Len != bs.Cols || newLine.GetFg(0) != eraseAttr.Fg || newLine.GetBg(0) != eraseAttr.Bg {
+		newLine = bs.Buffer().GetBlankLine(eraseAttr, isWrapped)
+		bs.cachedBlankLine = newLine
+	}
+	newLine.IsWrapped = isWrapped
+	return newLine
+}
+
+// recycleBlankLine resets line to a blank line for eraseAttr, allocating a
+// new one if line is nil.
+func (bs *BufferService) recycleBlankLine(line *BufferLine, eraseAttr *AttributeData) *BufferLine {
+	if line == nil {
+		return bs.Buffer().GetBlankLine(eraseAttr, false)
+	}
+	line.CopyFrom(bs.blankLineTemplate(eraseAttr, false))
+	return line
 }
 
 // ScrollLines scrolls the viewport by disp lines (negative = up, positive = down).

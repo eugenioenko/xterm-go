@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  path_instructions:
+    - path: "**/*.go"
+      instructions: |
+        - This is a port of the xterm.js headless core. Flag behavior that diverges from xterm.js unless the change says it is intentional.
+        - Parsing, printing, scrolling and cell access are hot paths. Flag new allocations or map operations there, and changes that stop small functions from inlining.
+        - Must build and pass tests on 32-bit (GOARCH=386, arm). Watch for int overflow and constants wider than 32 bits.
+        - Comments are reserved for non-obvious constraints; do not ask for doc comments on unexported code.
+    - path: "**/*_test.go"
+      instructions: |
+        - CI compares benchmarks between base and PR with benchstat. Keep setup out of the timed loop and inputs deterministic.

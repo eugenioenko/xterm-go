@@ -185,12 +185,12 @@ func (bl *BufferLine) GetExtended(index int) *ExtendedAttrs {
 func (bl *BufferLine) SetCell(index int, cell *CellData) {
 	if cell.Content&ContentIsCombinedMask != 0 {
 		bl.combined[index] = cell.CombinedData
-	} else {
+	} else if len(bl.combined) > 0 {
 		delete(bl.combined, index)
 	}
 	if cell.Bg&BgFlagHasExtended != 0 {
 		bl.extendedAttrs[index] = cell.Extended
-	} else {
+	} else if len(bl.extendedAttrs) > 0 {
 		delete(bl.extendedAttrs, index)
 	}
 	si := index * cellSize
@@ -201,10 +201,12 @@ func (bl *BufferLine) SetCell(index int, cell *CellData) {
 
 // SetCellFromCodepoint sets a cell from a codepoint, width, and attribute data.
 func (bl *BufferLine) SetCellFromCodepoint(index int, codePoint uint32, width int, attrs *AttributeData) {
-	delete(bl.combined, index)
+	if len(bl.combined) > 0 {
+		delete(bl.combined, index)
+	}
 	if attrs.Bg&BgFlagHasExtended != 0 {
 		bl.extendedAttrs[index] = attrs.Extended
-	} else {
+	} else if len(bl.extendedAttrs) > 0 {
 		delete(bl.extendedAttrs, index)
 	}
 	si := index * cellSize
@@ -477,12 +479,12 @@ func (bl *BufferLine) CopyCellsFrom(src *BufferLine, srcCol, destCol, length int
 func (bl *BufferLine) copyCellMapsFrom(src *BufferLine, srcCol, destCol int) {
 	if srcData := src.data; srcData[srcCol*cellSize+cellContent]&ContentIsCombinedMask != 0 {
 		bl.combined[destCol] = src.combined[srcCol]
-	} else {
+	} else if len(bl.combined) > 0 {
 		delete(bl.combined, destCol)
 	}
 	if src.data[srcCol*cellSize+cellBg]&BgFlagHasExtended != 0 {
 		bl.extendedAttrs[destCol] = src.extendedAttrs[srcCol]
-	} else {
+	} else if len(bl.extendedAttrs) > 0 {
 		delete(bl.extendedAttrs, destCol)
 	}
 }
@@ -490,12 +492,12 @@ func (bl *BufferLine) copyCellMapsFrom(src *BufferLine, srcCol, destCol int) {
 func (bl *BufferLine) copySparseMapsFrom(src *BufferLine) {
 	if bl.combined == nil {
 		bl.combined = make(map[int]string, len(src.combined))
-	} else {
+	} else if len(bl.combined) > 0 {
 		clear(bl.combined)
 	}
 	if bl.extendedAttrs == nil {
 		bl.extendedAttrs = make(map[int]*ExtendedAttrs, len(src.extendedAttrs))
-	} else {
+	} else if len(bl.extendedAttrs) > 0 {
 		clear(bl.extendedAttrs)
 	}
 	if len(src.combined) == 0 && len(src.extendedAttrs) == 0 {
