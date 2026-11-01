@@ -20,3 +20,12 @@ func BenchmarkWritePlainText(b *testing.B) {
 		t.Write(payload)
 	}
 }
+
+func BenchmarkFillScrollback(b *testing.B) {
+	payload := bytes.Repeat([]byte("hello\r\n"), 1100)
+	b.ReportAllocs()
+	for b.Loop() {
+		t := New(WithCols(80), WithRows(24), WithScrollback(1000))
+		t.Write(payload)
+	}
+}
