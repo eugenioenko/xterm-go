@@ -7,7 +7,7 @@ import (
 
 func BenchmarkWritePlainText(b *testing.B) {
 	const rows, cols = 44, 192
-	line := bytes.Repeat([]byte("The quick brown fox jumps over the lazy dog. "), 4)[:cols-12]
+	line := bytes.Repeat([]byte("The quick brown fox jumps over the lazy dog. "), 5)[:cols]
 	var payload []byte
 	for range rows * 4 {
 		payload = append(payload, line...)
