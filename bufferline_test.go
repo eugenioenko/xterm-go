@@ -676,7 +676,14 @@ func TestBufferLineReplaceCellsEmptyAndPartialRanges(t *testing.T) {
 	for i, ch := range "abcdef" {
 		bl.SetCellFromCodepoint(i, uint32(ch), 1, &AttributeData{Extended: &ExtendedAttrs{}})
 	}
-	bl.ReplaceCells(4, 2, charCell('X', 1), false)
+	bl.ReplaceCells(4, 2, charCell('Z', 1), false)
+	if got := bl.TranslateToString(false, 0, -1); got != "abcdef" {
+		t.Fatalf("reversed range changed the line to %q", got)
+	}
+	bl.ReplaceCells(4, 4, charCell('Z', 1), false)
+	if got := bl.TranslateToString(false, 0, -1); got != "abcdef" {
+		t.Fatalf("empty range changed the line to %q", got)
+	}
 	bl.ReplaceCells(1, 3, charCell('X', 1), false)
 	bl.ReplaceCells(5, 99, charCell('Y', 1), false)
 	if got := bl.TranslateToString(false, 0, -1); got != "aXXdeY" {
