@@ -220,7 +220,7 @@ func (bl *BufferLine) SetCellFromCodepoint(index int, codePoint uint32, width in
 func (bl *BufferLine) AddCodepointToCell(index int, codePoint uint32, width int) {
 	content := bl.data[index*cellSize+cellContent]
 	if content&ContentIsCombinedMask != 0 {
-		bl.setCombined(index, bl.combined[index]+string(rune(codePoint)))
+		bl.appendCombined(index, string(rune(codePoint)))
 	} else {
 		cp := content & ContentCodepointMask
 		if cp != 0 {
@@ -497,8 +497,17 @@ func (bl *BufferLine) setCombined(index int, s string) {
 	bl.combined[index] = s
 }
 
+func (bl *BufferLine) appendCombined(index int, s string) {
+	if bl.combined == nil {
+		bl.combined = make(map[int]string)
+	}
+	bl.combined[index] += s
+}
+
 func (bl *BufferLine) copySparseMapsFrom(src *BufferLine) {
-	if len(bl.combined) > 0 {
+	if bl.combined == nil && len(src.combined) > 0 {
+		bl.combined = make(map[int]string, len(src.combined))
+	} else if len(bl.combined) > 0 {
 		clear(bl.combined)
 	}
 	if bl.extendedAttrs == nil {
