@@ -488,4 +488,41 @@ func TestPrintWrapCombiningCharWidensCell(t *testing.T) {
 	})
 }
 
+// TestPrintWideEmojiCells checks that emoji occupy two cells: the glyph plus
+// its spacer, so following characters are not overwritten.
+func TestPrintWideEmojiCells(t *testing.T) {
+	t.Parallel()
 
+	tests := []struct {
+		Name  string
+		Input string
+		Emoji string
+	}{
+		{"supplementary emoji", "x\U0001F600yz", "\U0001F600"},
+		{"BMP emoji", "x\u2705yz", "\u2705"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			term := newTestTerminal(10, 2)
+			defer term.Dispose()
+			term.WriteString(tc.Input)
+
+			want := []cellInfo{
+				{Chars: "x", Width: 1},
+				{Chars: tc.Emoji, Width: 2},
+				{Chars: "", Width: 0},
+				{Chars: "y", Width: 1},
+				{Chars: "z", Width: 1},
+			}
+			for col, w := range want {
+				if diff := cmp.Diff(w, getCellInfo(term, 0, col)); diff != "" {
+					t.Errorf("cell %d (-want +got):\n%s", col, diff)
+				}
+			}
+			if term.CursorX() != len(want) {
+				t.Errorf("cursorX = %d, want %d", term.CursorX(), len(want))
+			}
+		})
+	}
+}
