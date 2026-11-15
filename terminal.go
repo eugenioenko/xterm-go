@@ -218,6 +218,17 @@ func (t *Terminal) CursorY() int { return t.bufferService.Buffer().Y }
 // Buffer returns the active buffer (for advanced access).
 func (t *Terminal) Buffer() *Buffer { return t.bufferService.Buffer() }
 
+// GetLinkData resolves a cell's Extended.URLID() to a copy of its OSC 8 data.
+// Returns nil for zero, unknown, or expired IDs (links no longer in the buffer).
+func (t *Terminal) GetLinkData(linkID int) *OscLinkData {
+	data := t.oscLinkService.GetLinkData(linkID)
+	if data == nil {
+		return nil
+	}
+	copy := *data
+	return &copy
+}
+
 // GetLine returns the content of a viewport line as a string.
 // Returns "" if y is out of range.
 func (t *Terminal) GetLine(y int) string {
