@@ -74,6 +74,7 @@ term.Buffer()            // active buffer
 term.NormalBuffer()      // normal screen buffer
 term.AltBuffer()         // alternate screen buffer
 term.IsAltBufferActive() // whether alt buffer is active
+term.GetLinkData(linkID) // OSC 8 URI and optional ID; nil for unknown/expired IDs
 
 // Resize.
 term.Resize(cols, rows)
@@ -87,6 +88,23 @@ term.OnLineFeed(func() { })            // line feed
 // Cleanup.
 term.Dispose()
 ```
+
+### OSC 8 hyperlinks
+
+Resolve a buffer cell's hyperlink ID to its URI and optional OSC 8 `id` parameter:
+
+```go
+cell := xterm.NewCellData()
+buf := term.Buffer()
+buf.Lines.Get(buf.YBase + y).LoadCell(x, cell) // valid viewport coordinates
+if link := term.GetLinkData(cell.Extended.URLID()); link != nil {
+    fmt.Println(link.URI)
+}
+```
+
+The lookup returns a copy, or `nil` when the ID is zero, unknown, or expired.
+Links remain available in scrollback until their last tracked line is removed.
+The host application handles hover, clicks, and opening the URI.
 
 ### SerializeAddon
 
