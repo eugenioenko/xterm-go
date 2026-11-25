@@ -316,3 +316,22 @@ func TestReflowIntegrationSmallerMoreLinesThanCapacity(t *testing.T) {
 		}
 	}
 }
+
+func TestReflowAfterClippingWideCellOnCursorLine(t *testing.T) {
+	t.Parallel()
+	term := New(WithCols(8), WithRows(4), WithScrollback(10))
+	defer term.Dispose()
+
+	term.WriteString("甲abcd界")
+	term.Resize(7, 4)
+	term.WriteString("\r\n")
+	term.Resize(4, 4)
+
+	lines := term.NormalBuffer().Lines
+	if got := lines.Get(0).TranslateToString(true, 0, -1); got != "甲ab" {
+		t.Errorf("first row = %q, want %q", got, "甲ab")
+	}
+	if got := lines.Get(1).TranslateToString(true, 0, -1); got != "cd" {
+		t.Errorf("wrapped row = %q, want %q", got, "cd")
+	}
+}
