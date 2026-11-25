@@ -340,6 +340,11 @@ func (bl *BufferLine) Resize(cols int, fillCell *CellData) bool {
 			bl.SetCell(i, fillCell)
 		}
 	} else {
+		if cols > 0 && bl.GetWidth(cols-1) == 2 {
+			// The trailing cell is being removed. Keeping its lead would let
+			// GetTrimmedLength report a column beyond the end of the line.
+			bl.SetCellFromCodepoint(cols-1, 0, 1, &AttributeData{})
+		}
 		bl.data = bl.data[:uint32Cells]
 		// Remove combined data and extended attrs beyond new length
 		for k := range bl.combined {
